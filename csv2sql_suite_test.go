@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	CurrentDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
-	FilesDir      = filepath.Join(CurrentDir, "../test_files")
+	CurrentDir, _ = os.Getwd()
+	FilesDir      = filepath.Join(CurrentDir, "test_files")
 )
 
 func TestCsv2sql(t *testing.T) {
