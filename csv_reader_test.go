@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	. "github.com/biggernoise/csv2sql"
 
@@ -50,6 +51,35 @@ var _ = Describe("CSV Reader", func() {
 
 			_, err = reader.Read()
 			Expect(err).To(Equal(io.EOF))
+		})
+
+	})
+	Context("Special Cases", func() {
+		It("Ignores excessive quoting", func() {
+			in := `"first_name","last_name","username"
+"Rob","Pike",rob
+Ken,Thompson,ken
+"Robert","Griesemer","gri"
+`
+			source := strings.NewReader(in)
+			reader := NewCsvReader(&CsvReaderConfig{Delimeter: ','}, source)
+
+			record, err := reader.Read()
+			Expect(err).To(BeNil())
+			Expect(record.GetValue("first_name")).To(Equal("Rob"))
+		})
+		It("Handles Pipe Delimited", func() {
+			in := `"first_name"|"last_name"|"username"
+"Rob"|"Pike"|rob
+Ken|Thompson|ken
+"Robert"|"Griesemer"|"gri"
+`
+			source := strings.NewReader(in)
+			reader := NewCsvReader(&CsvReaderConfig{Delimeter: '|'}, source)
+
+			record, err := reader.Read()
+			Expect(err).To(BeNil())
+			Expect(record.GetValue("first_name")).To(Equal("Rob"))
 		})
 
 	})
