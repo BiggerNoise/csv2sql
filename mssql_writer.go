@@ -37,7 +37,13 @@ func NewMsSqlWriter(config *MsSqlWriterConfig, output io.Writer) (w *MsSqlWriter
 func (w *MsSqlWriter) Write(r *Record) (err error) {
 	if w.setCount == 0 {
 		w.open()
+	} else if w.setCount >= w.config.ValuesPerInsert {
+		w.close()
+		w.open()
+	} else {
+		fmt.Fprintln(w.output, ",")
 	}
+
 	w.writeRecord(r)
 
 	return
@@ -86,4 +92,5 @@ func (w *MsSqlWriter) close() {
 	fmt.Fprintln(w.output, "")
 	fmt.Fprintln(w.output, "GO")
 	fmt.Fprintln(w.output, "")
+	w.setCount = 0
 }

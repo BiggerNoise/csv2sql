@@ -61,5 +61,49 @@ GO
 `))
 
 		})
+		It("Inserts two Records", func() {
+			var output bytes.Buffer
+			writer := NewMsSqlWriter(config, &output)
+			err := writer.Write(records[0])
+			Expect(err).To(BeNil())
+			err = writer.Write(records[1])
+			Expect(err).To(BeNil())
+			writer.Done()
+
+			Expect(output.String()).To(Equal(`INSERT INTO [People] ([first_name], [last_name], [username])
+VALUES
+('Rob', 'Pike', 'rob'),
+('Ken', 'Thompson', 'ken')
+GO
+
+`))
+
+		})
+
+		It("Automatically Competes insert sections", func() {
+			var output bytes.Buffer
+			writer := NewMsSqlWriter(config, &output)
+			err := writer.Write(records[0])
+			Expect(err).To(BeNil())
+			err = writer.Write(records[1])
+			Expect(err).To(BeNil())
+			err = writer.Write(records[2])
+			Expect(err).To(BeNil())
+			writer.Done()
+
+			Expect(output.String()).To(Equal(`INSERT INTO [People] ([first_name], [last_name], [username])
+VALUES
+('Rob', 'Pike', 'rob'),
+('Ken', 'Thompson', 'ken')
+GO
+
+INSERT INTO [People] ([first_name], [last_name], [username])
+VALUES
+('Robert', 'Griesemer', 'gri')
+GO
+
+`))
+
+		})
 	})
 })
