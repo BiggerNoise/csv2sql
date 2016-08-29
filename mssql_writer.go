@@ -78,14 +78,38 @@ func (w *MsSqlWriter) writeRecord(r *Record) (err error) {
 		if index > 0 {
 			fmt.Fprintf(w.output, ", ")
 		}
-		val, _ := r.GetValue(column.ColumnName)
-		fmt.Fprintf(w.output, "'%s'", val)
+		fmt.Fprintf(w.output, formatColumnValue(r, column))
 	}
+
 	fmt.Fprintf(w.output, ")")
 	w.setCount += 1
 	w.totalCount += 1
 	return
 
+}
+
+func formatColumnValue(r *Record, column MsSqlWriterConfigColumn) string {
+	val, _ := r.GetValue(getColumnKey(column))
+
+	switch column.ColumnType {
+	case ColumnTypeInteger:
+		fallthrough
+	case ColumnTypeDecimal:
+		return val
+
+	case ColumnTypeString:
+		return fmt.Sprintf("'%s'", val)
+
+	}
+	return ""
+}
+
+func getColumnKey(column MsSqlWriterConfigColumn) string {
+	if column.FieldName != "" {
+		return column.FieldName
+	} else {
+		return column.ColumnName
+	}
 }
 
 func (w *MsSqlWriter) close() {

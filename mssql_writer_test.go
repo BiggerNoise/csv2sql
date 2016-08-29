@@ -14,30 +14,30 @@ var _ = Describe("MsSqlWriter", func() {
 	var records []*Record
 	var config *MsSqlWriterConfig
 
-	BeforeEach(func() {
-		records = make([]*Record, 0, 3)
-		in := `"first_name","last_name","username"
+	Context("Simple Operations", func() {
+		BeforeEach(func() {
+			records = make([]*Record, 0, 3)
+			in := `"first_name","last_name","username"
 "Rob","Pike",rob
 Ken,Thompson,ken
 "Robert","Griesemer","gri"
 `
-		source := strings.NewReader(in)
-		reader := NewCsvReader(&CsvReaderConfig{Delimeter: ','}, source)
+			source := strings.NewReader(in)
+			reader := NewCsvReader(&CsvReaderConfig{Delimeter: ','}, source)
 
-		for record, err := reader.Read(); err == nil; record, err = reader.Read() {
-			records = append(records, record)
-		}
-		config = &MsSqlWriterConfig{
-			TableName:       "People",
-			ValuesPerInsert: 2,
-			Columns: []MsSqlWriterConfigColumn{
-				{ColumnName: "first_name", ColumnType: ColumnTypeString},
-				{ColumnName: "last_name", ColumnType: ColumnTypeString},
-				{ColumnName: "username", ColumnType: ColumnTypeString},
-			},
-		}
-	})
-	Context("Simple Operations", func() {
+			for record, err := reader.Read(); err == nil; record, err = reader.Read() {
+				records = append(records, record)
+			}
+			config = &MsSqlWriterConfig{
+				TableName:       "People",
+				ValuesPerInsert: 2,
+				Columns: []MsSqlWriterConfigColumn{
+					{ColumnName: "first_name", ColumnType: ColumnTypeString},
+					{ColumnName: "last_name", ColumnType: ColumnTypeString},
+					{ColumnName: "username", ColumnType: ColumnTypeString},
+				},
+			}
+		})
 		It("Constructs without exploding", func() {
 
 			var output bytes.Buffer
@@ -50,6 +50,29 @@ Ken,Thompson,ken
 			var output bytes.Buffer
 			writer := NewMsSqlWriter(config, &output)
 			err := writer.Write(records[0])
+			Expect(err).To(BeNil())
+			writer.Done()
+
+			Expect(output.String()).To(Equal(`INSERT INTO [People] ([first_name], [last_name], [username])
+VALUES
+('Rob', 'Pike', 'rob')
+GO
+
+`))
+		})
+
+		It("Inserts a single Record with a field/column name mismatch", func() {
+			in := `"first_name","last_name","user_name"
+"Rob","Pike",rob`
+
+			source := strings.NewReader(in)
+			reader := NewCsvReader(&CsvReaderConfig{Delimeter: ','}, source)
+			var output bytes.Buffer
+			config.Columns[2].FieldName = "user_name"
+			record, _ := reader.Read()
+
+			writer := NewMsSqlWriter(config, &output)
+			err := writer.Write(record)
 			Expect(err).To(BeNil())
 			writer.Done()
 
@@ -104,6 +127,49 @@ GO
 
 `))
 
+		})
+	})
+
+	Context("Operations with Numeric type", func() {
+
+		BeforeEach(func() {
+			records = make([]*Record, 0, 3)
+			in := `"first_name","last_name","username",uid
+"Rob","Pike",rob,1
+Ken,Thompson,ken,2
+"Robert","Griesemer","gri",42
+`
+			source := strings.NewReader(in)
+			reader := NewCsvReader(&CsvReaderConfig{Delimeter: ','}, source)
+
+			for record, err := reader.Read(); err == nil; record, err = reader.Read() {
+				records = append(records, record)
+			}
+			config = &MsSqlWriterConfig{
+				TableName:       "People",
+				ValuesPerInsert: 2,
+				Columns: []MsSqlWriterConfigColumn{
+					{ColumnName: "first_name", ColumnType: ColumnTypeString},
+					{ColumnName: "last_name", ColumnType: ColumnTypeString},
+					{ColumnName: "username", ColumnType: ColumnTypeString},
+					{ColumnName: "uid", ColumnType: ColumnTypeInteger},
+				},
+			}
+		})
+
+		It("Makes the Insert Correctly", func() {
+			var output bytes.Buffer
+			writer := NewMsSqlWriter(config, &output)
+			err := writer.Write(records[0])
+			Expect(err).To(BeNil())
+			writer.Done()
+
+			Expect(output.String()).To(Equal(`INSERT INTO [People] ([first_name], [last_name], [username], [uid])
+VALUES
+('Rob', 'Pike', 'rob', 1)
+GO
+
+`))
 		})
 	})
 })
