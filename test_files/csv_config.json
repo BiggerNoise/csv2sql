@@ -1,0 +1,10 @@
+{ 
+  "Delimeter": ",",
+  "TableName":"the_table",
+  "ValuesPerInsert":500,
+  "Columns":[
+	{"ColumnName": "name", "ColumnType":1},
+	{"ColumnName": "favorite color", "ColumnType":1},
+	{"ColumnName": "quest", "ColumnType":1}
+  ]
+}
