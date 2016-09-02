@@ -95,7 +95,11 @@ func formatColumnValue(r *Record, column MsSqlWriterConfigColumn) string {
 	case ColumnTypeInteger:
 		fallthrough
 	case ColumnTypeDecimal:
+	  if val == "" {
+		return "NULL"
+	  } else {
 		return val
+	  }
 
 	case ColumnTypeString:
 		return fmt.Sprintf("'%s'", val)

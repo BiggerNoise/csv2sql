@@ -136,7 +136,7 @@ GO
 			records = make([]*Record, 0, 3)
 			in := `"first_name","last_name","username",uid
 "Rob","Pike",rob,1
-Ken,Thompson,ken,2
+Ken,Thompson,ken,
 "Robert","Griesemer","gri",42
 `
 			source := strings.NewReader(in)
@@ -167,6 +167,21 @@ Ken,Thompson,ken,2
 			Expect(output.String()).To(Equal(`INSERT INTO [People] ([first_name], [last_name], [username], [uid])
 VALUES
 ('Rob', 'Pike', 'rob', 1)
+GO
+
+`))
+		})
+
+		It("Handles NULL values", func() {
+			var output bytes.Buffer
+			writer := NewMsSqlWriter(config, &output)
+			err := writer.Write(records[1])
+			Expect(err).To(BeNil())
+			writer.Done()
+
+			Expect(output.String()).To(Equal(`INSERT INTO [People] ([first_name], [last_name], [username], [uid])
+VALUES
+('Ken', 'Thompson', 'ken', NULL)
 GO
 
 `))
